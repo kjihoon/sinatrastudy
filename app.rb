@@ -1,5 +1,18 @@
 require 'sinatra'
 require "sinatra/reloader"
+require "rest-client"
+require "json"
+require "httparty"
+require "nokogiri"
+require "uri"
+require "date"
+require "csv"
+
+before do
+    p "****************************"
+    p params
+    p "****************************"
+end
 
 get '/' do
   'Hello world! welcome'
@@ -80,4 +93,100 @@ get '/randomgame/:var' do
      @result = result
      @name = var
      erb :randomgame
+end
+
+get '/lotto-sample' do
+   #random samplng 
+   num = (1..45).to_a.sample(6).sort
+   url ="http://www.nlotto.co.kr/common.do?method=getLottoNumber&drwNo=809"
+   lotto_info = RestClient.get(url)
+   lotto_info_hash=JSON.parse(lotto_info);
+   actnum =[]
+   lotto_info_hash.each do |k,v|
+      check = k.slice(0,5)
+      if (check == "drwtN")
+          actnum << v
+      end
+      end
+    
+   @bonusnum =    lotto_info_hash["bnusNo"]
+   puts @bonusnum
+   
+   
+   
+   n =  actnum & num
+   n = n.length
+   puts n
+   result = "꽝"
+   if (n ==3) then result = "5등"
+   elsif (n==4) then result = "4등"
+   elsif(n==5)
+        if ((@bonusnum & n)>0) then result ="3등"
+        else 
+            result ="2등"
+        end
+   elsif(n==6) then result="1등"
+   end
+   
+   puts result
+   
+   
+   @n = n
+   @actlotto = actnum.to_a.sort
+   @yourlotto = num
+   erb :lotto
+end
+
+
+
+get '/form' do
+    
+    erb:form
+end
+
+get '/search' do
+    @keyword = params[:keyword]
+    url = "https://search.naver.com/search.naver?query="
+    query = @keyword
+    url = url + query
+    redirect to (url)
+end
+
+
+
+
+get '/opgg' do
+   
+    
+    erb:opgg
+end
+
+get '/opggresult' do
+    url = "http://www.op.gg/summoner/userName="
+    @userName = params[:userName]
+    @encodeName = URI.encode(@userName)
+    
+    @res = HTTParty.get(url+@encodeName)
+    @doc = Nokogiri::HTML(@res.body)
+    
+    @win = @doc.css(".WinLose .wins").text
+    @lose = @doc.css(".WinLose .losses").text
+    @rank = @doc.css(".SummonerRatingMedium .tierRank").text
+    @champion =@doc.css(".GameSettingInfo .ChampionName").text
+    
+    #File.open(filename,option) do |f|
+    #  handling...
+    #end
+    
+    #File.open("opgg.txt",'a+') do |f|
+    #    f.write("#{@encodeName} : #{@win},#{@lose},#{@rank} \n")
+    #end
+    CSV.open("opgg.csv",'a+') do |c|
+        c << [@userName,@win,@lose,@rank]
+    end
+    
+    
+    
+    
+    erb:opggresult
 end
