@@ -62,3 +62,22 @@ get '/lunch-hash' do
     #이름과 url을 넘겨서 erb를 랜더링 한다.
     erb :lunchhash
 end
+
+
+get '/randomgame/:var' do
+    var = params[:var]
+    agearr = ["10","20","30","40","50"]
+    age ={"10" =>"당신은 10대입니다.",
+        "20" =>"당신은 20대로 추정됩니다.",
+        "30" =>"당신은 30대로 추정됩니다.",
+        "40" =>"당신은 40대로 추정됩니다",
+        "50" =>"당신은 50대로 추정됩니다"
+    }
+    rand = agearr.sample
+    puts rand
+    result = age[rand]
+    puts result
+     @result = result
+     @name = var
+     erb :randomgame
+end
